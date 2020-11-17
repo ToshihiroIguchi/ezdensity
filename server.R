@@ -63,11 +63,19 @@ shinyServer(function(input, output) {
       })
       
       #密度推定結果表示
-      output$dens <- renderPlot({plot(result(), method = "density")})
+      output$pdf <- renderPlot({plot(result(), method = "pdf")})
       
       #CDF表示
       output$cdf <- renderPlot({plot(result(), method = "cdf")})
       
+      #確率紙表示
+      
+      
+      
+      output$paper <- renderPlot({
+        plot(result(), method = input$probit.logit, alpha = 0.3,
+             log = if(input$scale == "log"){TRUE}else{FALSE})
+        })
       
       
       

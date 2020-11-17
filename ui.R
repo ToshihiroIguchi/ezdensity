@@ -1,6 +1,10 @@
 
 library(shiny)
 
+probit.logit <- c("probit", "logit")
+names(probit.logit) <- c("Probit", "Logit")
+
+
 shinyUI(fluidPage(
 
   titlePanel(title = "", windowTitle = "ezdensity"),
@@ -27,8 +31,14 @@ shinyUI(fluidPage(
       
       tabsetPanel(type = "tabs", 
                   tabPanel("Histgram", plotOutput("hist")),
-                  tabPanel("Density", plotOutput("dens")),
-                  tabPanel("CDF", plotOutput("cdf"))
+                  tabPanel("pdf", plotOutput("pdf")),
+                  tabPanel("cdf", plotOutput("cdf")),
+                  tabPanel("Paper", 
+                           selectInput("probit.logit", 
+                                       label = "Scale transformation", 
+                                       choices = probit.logit),
+                           
+                           plotOutput("paper"))
                   
                   )
       

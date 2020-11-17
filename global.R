@@ -190,13 +190,56 @@ kde2 <- function(x, log = FALSE){
   
 }
 
+#プロッティングポジション公式
+pp.formula <- function(x, alpha){
+  
+  #Weibull formula a = 1, Hazen formula a = 1/2, 
+  #Gringorten formula a = 0.44, Blom formula  a = 3.8, Cunnane formula a = 2/5
+  #Beard formula a = 0.31
+  #Mean rank a = 0, Median rank a = 0.3, 
+  
+  
+  #エラーチェック
+  if(alpha < 0 || alpha > 1){return(NULL)}
+  
+  #xの値が小さい順から数えて何番目か調査
+  i <- rank(x)
+  
+  #データ数
+  N <- length(x)
+  
+  #プロッティングポジション
+  ret <- (i - alpha)/(N + 1 - 2*alpha)
+  
+  #戻り値
+  return(ret)
+  
+}
+
+#yが0,1の場合は除去
+y01.del <- function(df){
+  #エラーチェック
+  if(is.null(df)){return(NULL)}
+  if(!is.data.frame(df)){return(NULL)}
+  
+  #yが0,1の位置
+  y.vec <- df$y %>% as.vec()
+  y01.pos <- which(y.vec*(1 - y.vec) > 0)
+  
+  #0,1を削除
+  ret <- df[y01.pos, ]
+  
+  #戻り値
+  return(ret)
+}
+
 #確率密度関数をプロット
-plot.kde2 <- function(obj, log = FALSE, method = "density"){
+plot.kde2 <- function(obj, log = FALSE, method = "pdf", alpha = 0.3){
   
-  #methodはdensity, cdf, probit, logitを選択可能
+  #methodはpdf, cdf, probit, logitを選択可能
   
-  #densityでもcdfでもprobitでもlogitでもない場合はNULLを返す
-  if(method != "density" && method != "cdf" && method != "probit" && method != "logit"){return(NULL)}
+  #pdfでもcdfでもprobitでもlogitでもない場合はNULLを返す
+  if(method != "pdf" && method != "cdf" && method != "probit" && method != "logit"){return(NULL)}
   
   #オブジェクトがNULLの場合はNULLを返す
   if(is.null(obj)){return(NULL)}
@@ -210,6 +253,10 @@ plot.kde2 <- function(obj, log = FALSE, method = "density"){
   #オブジェクトに格納されているx軸の値（元のデータか、対数に変換されているか）
   x.raw <- obj$eval.points
   
+  #範囲はNULLにしておく
+  lim.add <- NULL
+  
+  
   #x軸のデータ作成(対数変換されている場合は元に戻す)
   if(obj$log){
     x.vec <- exp(x.raw)
@@ -219,38 +266,78 @@ plot.kde2 <- function(obj, log = FALSE, method = "density"){
     x.obj <- obj$x
   }
   
-  #y軸のデータとラベル名作成
-  if(method == "density"){
+  #pdfの場合のy軸のデータとラベル名作成
+  if(method == "pdf"){
     y <- obj$estimate
     y.name <- "Density"
     point.df <- data.frame(x = x.obj, y = 0)
     gg.add <- geom_point(data = point.df, aes(x = x, y = y))
   }
   
-  if(method == "cdf" || method == "probit" || method == "logit"){
+  #cdfの場合のy軸のデータとラベル名作成
+  if(method == "cdf"){
     y <- pkde(x.raw, fhat = obj)
     y.name <- "Cumulative Propotion"
     
     #ecdfを計算する関数を作成
-    ecdffn <- ecdf(obj$x)
+    ecdffn <- ecdf(x.obj)
     
+    #データフレームを作成
     df.ecdf <- data.frame(x = x.vec, y = ecdffn(x.vec))
     
+    #ggplotに付け足すプロット
     gg.add <- geom_line(data = df.ecdf, aes(x = x, y = y)) 
+    
+  }
+  
+  
+  #ワイブル、ガンベル、正規確率、対数正規確率プロットの場合のy軸のデータとラベル名作成
+  if(method == "probit" || method == "logit"){
+    y <- pkde(x.raw, fhat = obj)
+    y.name <- "Cumulative Propotion"
+    
+    #データフレームを作成
+    df.pp <- data.frame(x = x.obj, y = pp.formula(x.obj, alpha = alpha))
+    
+    #ggplotに付け足すプロット
+    gg.add <- geom_point(data = df.pp, aes(x = x, y = y)) 
+    
+    #最小値と最大値を規定
+    #https://www.r-bloggers.com/2015/09/creating-a-scale-transformation/
+    #ゼロと1を含むとエラーになるので、0より大きく1より小さい数にする
+    y.min <- (1/length(x.raw))*0.5 #係数は調整する必要があるか？
+    lim.add <- ylim(y.min, 1 - y.min)
+    
+    
+    #y軸のスケール設定
+    #http://mukkujohn.hatenablog.com/entry/2016/10/08/155023
+    #http://goldenstate.cocolog-nifty.com/blog/2014/08/r-27c2.html
+    break.scale.half <- 10^c(floor(log10(y.min)) : -1)
+    break.scale <- c(break.scale.half, 0.5, 1 - sort(break.scale.half, decreasing = TRUE))
+    
+    #lim.add + scale_y_continuous(limits = c(y.min, 1- y.min))
+    
+    #yの値が0,1は除去
+    data <- data %>% y01.del()
     
   }
   
   #グラフ用データ作成
   data <- data.frame(x.vec = x.vec, y = y)
+
+  #プロビット変換やロジット変換で0,1を含むとグラフにできないので除去
+  if(method == "probit" || method == "logit"){
+    data <- data %>% y01.del()
+  }
+  
+
   
   #ggplotのオブジェクトを作成
   ret <- ggplot(data = data, mapping = aes(x = x.vec, y = y)) + 
     geom_line(color = "red") +
     gg.add + 
-    xlab(NULL) + ylab(y.name)
-  
-  
-  #http://mukkujohn.hatenablog.com/entry/2016/09/28/223957
+    xlab(NULL) + ylab(y.name) +
+    lim.add
   
   
   #対数設定の場合
@@ -259,15 +346,9 @@ plot.kde2 <- function(obj, log = FALSE, method = "density"){
   }
   
   
+  
   #probitかlogitの場合は縦軸を変えて直線に近づける
   if(method == "probit" || method == "logit"){
-    
-    
-    #https://www.r-bloggers.com/2015/09/creating-a-scale-transformation/
-    
-    #ゼロと1を含むとエラーになるので、0より大きく1より小さい数にする
-    y.min <- (1/length(x.raw))*0.5 #係数は調整する必要があるか？
-    ret <- ret + ylim(y.min, 1 - y.min)
     
     #y軸をプロビット変換。正規分布なら直線になる。
     if(method == "probit"){
@@ -279,10 +360,13 @@ plot.kde2 <- function(obj, log = FALSE, method = "density"){
       ret <- ret + coord_trans(y = scales::logit_trans())
     }
     
-    
   }
+  
+  
+  
   
   #戻り値
   return(ret)
 }
+
 
