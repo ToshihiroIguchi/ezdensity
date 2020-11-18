@@ -69,12 +69,10 @@ shinyServer(function(input, output) {
       output$cdf <- renderPlot({plot(result(), method = "cdf")})
       
       #確率紙表示
-      
-      
-      
       output$paper <- renderPlot({
-        plot(result(), method = input$probit.logit, alpha = 0.3,
-             log = if(input$scale == "log"){TRUE}else{FALSE})
+        try.null(plot(result(), method = input$probit.logit, 
+             alpha = as.numeric(input$plottingposition),
+             log = if(input$scale == "log"){TRUE}else{FALSE}))
         })
       
       

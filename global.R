@@ -236,10 +236,11 @@ y01.del <- function(df){
 #確率密度関数をプロット
 plot.kde2 <- function(obj, log = FALSE, method = "pdf", alpha = 0.3){
   
-  #methodはpdf, cdf, probit, logitを選択可能
+  #methodはpdf, cdf, probit, logit, loglogitを選択可能
   
   #pdfでもcdfでもprobitでもlogitでもない場合はNULLを返す
-  if(method != "pdf" && method != "cdf" && method != "probit" && method != "logit"){return(NULL)}
+  if(method != "pdf" && method != "cdf" && 
+     method != "probit" && method != "logit" && method != "loglogit"){return(NULL)}
   
   #オブジェクトがNULLの場合はNULLを返す
   if(is.null(obj)){return(NULL)}
@@ -292,7 +293,7 @@ plot.kde2 <- function(obj, log = FALSE, method = "pdf", alpha = 0.3){
   
   
   #ワイブル、ガンベル、正規確率、対数正規確率プロットの場合のy軸のデータとラベル名作成
-  if(method == "probit" || method == "logit"){
+  if(method == "probit" || method == "logit" || method == "loglogit"){
     y <- pkde(x.raw, fhat = obj)
     y.name <- "Cumulative Propotion"
     
@@ -326,7 +327,7 @@ plot.kde2 <- function(obj, log = FALSE, method = "pdf", alpha = 0.3){
   data <- data.frame(x.vec = x.vec, y = y)
 
   #プロビット変換やロジット変換で0,1を含むとグラフにできないので除去
-  if(method == "probit" || method == "logit"){
+  if(method == "probit" || method == "logit" || method == "loglogit"){
     data <- data %>% y01.del()
   }
   
@@ -348,17 +349,29 @@ plot.kde2 <- function(obj, log = FALSE, method = "pdf", alpha = 0.3){
   
   
   #probitかlogitの場合は縦軸を変えて直線に近づける
-  if(method == "probit" || method == "logit"){
+  if(method == "probit" || method == "logit" || method == "loglogit"){
     
     #y軸をプロビット変換。正規分布なら直線になる。
     if(method == "probit"){
       ret <- ret + coord_trans(y = scales::probit_trans())
     }
     
-    #y軸をロジット変換。ワイブルかガンベルなら直線になる
+    #y軸をロジット変換
     if(method == "logit"){
       ret <- ret + coord_trans(y = scales::logit_trans())
     }
+    
+    #y軸を対数のロジットで変換。ワイブルやガンベルが直線に
+    if(method == "loglogit"){
+      #https://stackoverflow.com/questions/49248937/in-rs-scales-package-why-does-trans-new-use-the-inverse-argument
+      lnln <- trans_new("lnln", 
+                        transform = function(x){log(log(1/(1 - x)))},
+                        inverse = function(x){x})
+      
+      ret <- ret + coord_trans(y = lnln)
+      
+    }
+    
     
   }
   
@@ -369,4 +382,15 @@ plot.kde2 <- function(obj, log = FALSE, method = "pdf", alpha = 0.3){
   return(ret)
 }
 
+#エラーをNULLにする
+try.null <- function(obj){
+  
+  ret <- try(obj, silent = FALSE)
+  
+  if(class(ret)[1] == "try-error"){return(NULL)}
+  
+  return(ret)
+  
+  
+}
 
