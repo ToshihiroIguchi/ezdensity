@@ -75,8 +75,7 @@ shinyServer(function(input, output) {
              log = if(input$scale == "log"){TRUE}else{FALSE}))
         })
       
-      
-      
+
     })
     
     

@@ -3,6 +3,8 @@ library(dplyr)
 library(readr)
 library(readxl)
 
+library(scales)
+
 library(ggplot2)
 #library(plotly)
 
@@ -26,6 +28,18 @@ is.null.na.null <- function(x){
   if(is.na(x)){return(NULL)}
   if(x == "NA"){return(NULL)}
   return(TRUE)
+  
+}
+
+#エラーをNULLにする
+try.null <- function(obj){
+  
+  ret <- try(obj, silent = FALSE)
+  
+  if(class(ret)[1] == "try-error"){return(NULL)}
+  
+  return(ret)
+  
   
 }
 
@@ -238,9 +252,15 @@ plot.kde2 <- function(obj, log = FALSE, method = "pdf", alpha = 0.3){
   
   #methodはpdf, cdf, probit, logit, loglogitを選択可能
   
-  #pdfでもcdfでもprobitでもlogitでもない場合はNULLを返す
-  if(method != "pdf" && method != "cdf" && 
-     method != "probit" && method != "logit" && method != "loglogit"){return(NULL)}
+  #method一覧
+  all.method <- c("pdf", "cdf", "probit", "logit", "loglogit")
+  
+  #確率紙用のmethod
+  paper.method <-  c("probit", "logit", "loglogit")
+  
+  
+  #想定されているmethodでない場合はNULLを返す
+  if(!any(method == all.method)){return(NULL)}
   
   #オブジェクトがNULLの場合はNULLを返す
   if(is.null(obj)){return(NULL)}
@@ -256,7 +276,6 @@ plot.kde2 <- function(obj, log = FALSE, method = "pdf", alpha = 0.3){
   
   #範囲はNULLにしておく
   lim.add <- NULL
-  
   
   #x軸のデータ作成(対数変換されている場合は元に戻す)
   if(obj$log){
@@ -291,10 +310,17 @@ plot.kde2 <- function(obj, log = FALSE, method = "pdf", alpha = 0.3){
     
   }
   
+  #最小値を規定
+  #https://www.r-bloggers.com/2015/09/creating-a-scale-transformation/
+  y.min <- (1/length(x.raw))*0.5 #係数は調整する必要があるか？
   
   #ワイブル、ガンベル、正規確率、対数正規確率プロットの場合のy軸のデータとラベル名作成
-  if(method == "probit" || method == "logit" || method == "loglogit"){
+  if(any(method == paper.method)){
+    
+    #カーネル密度推定の累積値
     y <- pkde(x.raw, fhat = obj)
+    
+    #y軸の名前
     y.name <- "Cumulative Propotion"
     
     #データフレームを作成
@@ -303,20 +329,25 @@ plot.kde2 <- function(obj, log = FALSE, method = "pdf", alpha = 0.3){
     #ggplotに付け足すプロット
     gg.add <- geom_point(data = df.pp, aes(x = x, y = y)) 
     
-    #最小値と最大値を規定
-    #https://www.r-bloggers.com/2015/09/creating-a-scale-transformation/
-    #ゼロと1を含むとエラーになるので、0より大きく1より小さい数にする
-    y.min <- (1/length(x.raw))*0.5 #係数は調整する必要があるか？
-    lim.add <- ylim(y.min, 1 - y.min)
-    
-    
     #y軸のスケール設定
     #http://mukkujohn.hatenablog.com/entry/2016/10/08/155023
     #http://goldenstate.cocolog-nifty.com/blog/2014/08/r-27c2.html
     break.scale.half <- 10^c(floor(log10(y.min)) : -1)
-    break.scale <- c(break.scale.half, 0.5, 1 - sort(break.scale.half, decreasing = TRUE))
     
-    #lim.add + scale_y_continuous(limits = c(y.min, 1- y.min))
+    #loglogitかそれ以外でスケールを変える
+    if(method != "loglogit"){
+      #logologit以外は上下対象のスケール
+      break.scale <- c(break.scale.half, 0.5, 1 - sort(break.scale.half, decreasing = TRUE))
+    }else{
+      #loglogitは1に近い確率のスケールが狭くなるので上は広くとる
+      
+      #http://poncotty.com/2020/03/28/%E3%83%AF%E3%82%A4%E3%83%96%E3%83%AB%E5%88%86%E5%B8%83/#toc7
+      #ワイブルプロットのY=0に相当する0.632を追加。
+      break.scale <- c(break.scale.half, 0.5, 0.632, 0.9)
+    }
+    
+    #縦軸のスケールをつける
+    lim.add <- scale_y_continuous(breaks = break.scale)
     
     #yの値が0,1は除去
     data <- data %>% y01.del()
@@ -325,13 +356,33 @@ plot.kde2 <- function(obj, log = FALSE, method = "pdf", alpha = 0.3){
   
   #グラフ用データ作成
   data <- data.frame(x.vec = x.vec, y = y)
-
+  
   #プロビット変換やロジット変換で0,1を含むとグラフにできないので除去
-  if(method == "probit" || method == "logit" || method == "loglogit"){
-    data <- data %>% y01.del()
+  if(any(method == paper.method)){
+    
+    #yが範囲外の場合は除去
+    y.del <- function(df, min = 0, max = 1){
+      #エラーチェック
+      if(is.null(df)){return(NULL)}
+      if(!is.data.frame(df)){return(NULL)}
+      
+      #yが0,1の位置
+      y.vec <- df$y %>% as.vec()
+      y.pos <- c(which(y.vec <= min), which(y.vec >= max))
+      
+      #0,1を削除
+      ret <- df[-y.pos, ]
+      
+      #戻り値
+      return(ret)
+    }
+    
+    
+    data <- data %>% y.del(min = y.min, max = 1 - y.min)
+    
   }
   
-
+  
   
   #ggplotのオブジェクトを作成
   ret <- ggplot(data = data, mapping = aes(x = x.vec, y = y)) + 
@@ -349,7 +400,7 @@ plot.kde2 <- function(obj, log = FALSE, method = "pdf", alpha = 0.3){
   
   
   #probitかlogitの場合は縦軸を変えて直線に近づける
-  if(method == "probit" || method == "logit" || method == "loglogit"){
+  if(any(method == paper.method)){
     
     #y軸をプロビット変換。正規分布なら直線になる。
     if(method == "probit"){
@@ -380,17 +431,5 @@ plot.kde2 <- function(obj, log = FALSE, method = "pdf", alpha = 0.3){
   
   #戻り値
   return(ret)
-}
-
-#エラーをNULLにする
-try.null <- function(obj){
-  
-  ret <- try(obj, silent = FALSE)
-  
-  if(class(ret)[1] == "try-error"){return(NULL)}
-  
-  return(ret)
-  
-  
 }
 
