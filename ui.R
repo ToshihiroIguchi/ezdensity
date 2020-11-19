@@ -1,19 +1,15 @@
-
+#ライブラリ読み込み
 library(shiny)
 
+#確率紙の縦軸の変換
 probit.logit <- c("probit", "logit", "loglogit")
 names(probit.logit) <- c("Probit", "Logit", "Log-logit")
 
+#プロッティングポジション
 plottingposition <- c(0, 0.3, 0.31, 0.38, 0.4, 0.44, 0.5, 1)
 names(plottingposition) <- c("Mean rank", "Median rank", "Beard formula",
                              "Blom formula", "Cunnane formula", "Gringorten formula",
                              "Hazen formula", "Weibull formula")
-
-
-#Weibull formula a = 1, Hazen formula a = 1/2, 
-#Gringorten formula a = 0.44, Blom formula  a = 3.8, Cunnane formula a = 2/5
-#Beard formula a = 0.31
-#Mean rank a = 0, Median rank a = 0.3, 
 
 
 shinyUI(fluidPage(
