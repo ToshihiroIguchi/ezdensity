@@ -1,11 +1,11 @@
+#ライブラリ読み込み
 library(ks)
 library(dplyr)
 library(readr)
 library(readxl)
-
 library(scales)
-
 library(ggplot2)
+
 #library(plotly)
 
 #ベクトルに強制変換
@@ -28,6 +28,14 @@ is.null.na.null <- function(x){
   if(is.na(x)){return(NULL)}
   if(x == "NA"){return(NULL)}
   return(TRUE)
+  
+}
+
+#NAであればNULLを返す
+is.na.null <- function(x){
+  if(is.na(x)){return(NULL)}
+  if(x == "NA"){return(NULL)}
+  return(x)
   
 }
 
@@ -248,7 +256,11 @@ y01.del <- function(df){
 }
 
 #確率密度関数をプロット
-plot.kde2 <- function(obj, log = FALSE, method = "pdf", alpha = 0.3){
+plot.kde2 <- function(obj, method = "pdf", alpha = 0.3, p = NULL, q = NULL){
+  
+  print(p)
+  print(q)
+  
   
   #methodはpdf, cdf, probit, logit, loglogitを選択可能
   
@@ -257,7 +269,6 @@ plot.kde2 <- function(obj, log = FALSE, method = "pdf", alpha = 0.3){
   
   #確率紙用のmethod
   paper.method <-  c("probit", "logit", "loglogit")
-  
   
   #想定されているmethodでない場合はNULLを返す
   if(!any(method == all.method)){return(NULL)}
@@ -270,6 +281,8 @@ plot.kde2 <- function(obj, log = FALSE, method = "pdf", alpha = 0.3){
   
   #クラスをkdeに変換
   class(obj) <- "kde"
+  
+  log <- obj$log
   
   #オブジェクトに格納されているx軸の値（元のデータか、対数に変換されているか）
   x.raw <- obj$eval.points
@@ -285,6 +298,9 @@ plot.kde2 <- function(obj, log = FALSE, method = "pdf", alpha = 0.3){
     x.vec <- x.raw
     x.obj <- obj$x
   }
+  
+  
+  
   
   #pdfの場合のy軸のデータとラベル名作成
   if(method == "pdf"){
@@ -313,6 +329,63 @@ plot.kde2 <- function(obj, log = FALSE, method = "pdf", alpha = 0.3){
   #最小値を規定
   #https://www.r-bloggers.com/2015/09/creating-a-scale-transformation/
   y.min <- (1/length(x.raw))*0.5 #係数は調整する必要があるか？
+  
+  
+  #線を追加用のNULLの変数
+  add.p <- NULL; add.q <- NULL
+  
+  
+  #pdfでなければ、線を追加できるようにする
+  if(method != "pdf"){
+    
+    #数値指定の線を追加用の計算
+    if(log){
+      
+      if(!is.null(p)){q.pos <- exp(qkde(p, obj)); y.min <- min(p * 0.5, y.min)}
+      
+      if(!is.null(q)){
+        p.pos <- pkde(log(q), obj)
+        if(p.pos > 0){y.min <- min(p.pos * 0.5, y.min)}
+        
+      }
+      
+      x.min <- min(x.vec)*0.5
+    }else{
+      if(!is.null(p)){q.pos <- qkde(p, obj); y.min <- min(p * 0.5, y.min)}
+      
+      if(!is.null(q)){
+        p.pos <- pkde(q, obj)
+        if(p.pos > 0){y.min <- min(p.pos * 0.5, y.min)}
+      }
+      x.min <- -Inf
+    }
+    
+    
+    
+    if(!is.null(p) && p > 0 && p < 1){
+      print(q.pos)
+      add.p <- geom_line(
+        data = data.frame(q = c(x.min, q.pos, q.pos), p = c(p, p, y.min)), 
+        aes(x = q, y = p), colour = "blue")
+    }
+    
+    if(!is.null(q) && p.pos > 0 && p.pos < 1){
+      add.q <- geom_line(
+        data = data.frame(q = c(x.min, q, q), p = c(p.pos, p.pos, y.min)), 
+        aes(x = q, y = p), colour = "green")
+    }
+    
+    
+    
+    
+  }
+  
+  
+  
+  
+  
+  
+  
   
   #ワイブル、ガンベル、正規確率、対数正規確率プロットの場合のy軸のデータとラベル名作成
   if(any(method == paper.method)){
@@ -384,12 +457,21 @@ plot.kde2 <- function(obj, log = FALSE, method = "pdf", alpha = 0.3){
   
   
   
+  
+  
+  
+  
+  
   #ggplotのオブジェクトを作成
   ret <- ggplot(data = data, mapping = aes(x = x.vec, y = y)) + 
     geom_line(color = "red") +
+    
+    add.p + add.q +
     gg.add + 
+    
     xlab(NULL) + ylab(y.name) +
     lim.add
+  
   
   
   #対数設定の場合
@@ -427,9 +509,12 @@ plot.kde2 <- function(obj, log = FALSE, method = "pdf", alpha = 0.3){
   }
   
   
-  
-  
   #戻り値
   return(ret)
 }
+
+
+
+
+
 

@@ -41,18 +41,44 @@ shinyUI(fluidPage(
                   tabPanel("pdf", plotOutput("pdf")),
                   tabPanel("cdf", plotOutput("cdf")),
                   tabPanel("Paper", 
-                           selectInput("probit.logit", 
-                                       label = "Scale transformation", 
-                                       choices = probit.logit),
                            
-                           selectInput("plottingposition",
-                                       label = "Plotting position",
-                                       choices = plottingposition,
-                                       selected = "0.3"),
+                           fluidRow(
+                             column(6,
+                                    selectInput("probit.logit", 
+                                                label = "Scale transformation", 
+                                                choices = probit.logit)
+                                    ),
+                             
+                             column(6,
+                                    selectInput("plottingposition",
+                                                label = "Plotting position",
+                                                choices = plottingposition,
+                                                selected = "0.3")
+                                    )
+                           ),
+
+                           plotOutput("paper"),
                            
-                           plotOutput("paper"))
+                           
+                           fluidRow(
+                             column(6,
+                                    numericInput("p.input",
+                                                 label = "Probability",
+                                                 value = 0.5,
+                                                 min = 1e-30,
+                                                 max = 1 - 1e-30)
+                                    
+                                    ),
+                             column(6,
+                                    numericInput("q.input",
+                                                 label = "Quantile",
+                                                 value = 1))
+                           )
+                           
+                           )
+      )
                   
-                  )
+                  
       
       
       

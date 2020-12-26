@@ -54,7 +54,7 @@ shinyServer(function(input, output) {
       
       #ヒストグラムを表示
       output$hist <- renderPlot({
-        gg.hist(vec.data(), scale = input$scale) 
+        gg.hist(vec.data(), scale = input$scale)
       })
       
       #カーネル密度推定（メイン）
@@ -72,7 +72,8 @@ shinyServer(function(input, output) {
       output$paper <- renderPlot({
         try.null(plot(result(), method = input$probit.logit, 
              alpha = as.numeric(input$plottingposition),
-             log = if(input$scale == "log"){TRUE}else{FALSE}))
+             p = is.na.null(input$p.input),
+             q = is.na.null(input$q.input)))
         })
       
 
