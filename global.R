@@ -257,11 +257,7 @@ y01.del <- function(df){
 
 #確率密度関数をプロット
 plot.kde2 <- function(obj, method = "pdf", alpha = 0.3, p = NULL, q = NULL){
-  
-  print(p)
-  print(q)
-  
-  
+
   #methodはpdf, cdf, probit, logit, loglogitを選択可能
   
   #method一覧
@@ -282,6 +278,7 @@ plot.kde2 <- function(obj, method = "pdf", alpha = 0.3, p = NULL, q = NULL){
   #クラスをkdeに変換
   class(obj) <- "kde"
   
+  #オブジェクトからlogがTRUEかFALSEの情報を取る
   log <- obj$log
   
   #オブジェクトに格納されているx軸の値（元のデータか、対数に変換されているか）
@@ -289,6 +286,9 @@ plot.kde2 <- function(obj, method = "pdf", alpha = 0.3, p = NULL, q = NULL){
   
   #範囲はNULLにしておく
   lim.add <- NULL
+  
+  #タイトルはNULLにしておく
+  title.add <- NULL
   
   #x軸のデータ作成(対数変換されている場合は元に戻す)
   if(obj$log){
@@ -298,12 +298,10 @@ plot.kde2 <- function(obj, method = "pdf", alpha = 0.3, p = NULL, q = NULL){
     x.vec <- x.raw
     x.obj <- obj$x
   }
-  
-  
-  
-  
+
   #pdfの場合のy軸のデータとラベル名作成
   if(method == "pdf"){
+    title.add <- ggtitle("probability density function")
     y <- obj$estimate
     y.name <- "Density"
     point.df <- data.frame(x = x.obj, y = 0)
@@ -312,6 +310,7 @@ plot.kde2 <- function(obj, method = "pdf", alpha = 0.3, p = NULL, q = NULL){
   
   #cdfの場合のy軸のデータとラベル名作成
   if(method == "cdf"){
+    title.add <- ggtitle("cumulative distribution function")
     y <- pkde(x.raw, fhat = obj)
     y.name <- "Cumulative Propotion"
     
@@ -326,14 +325,20 @@ plot.kde2 <- function(obj, method = "pdf", alpha = 0.3, p = NULL, q = NULL){
     
   }
   
+  #名前のついている確率紙からタイトルの場合分け
+  if(method == "loglogit" && log == TRUE){title.add <- ggtitle("Weibull plot")}
+  if(method == "loglogit" && log == FALSE){title.add <- ggtitle("Gumbel plot")}
+  if(method == "probit" && log == TRUE){title.add <- ggtitle("Lognormal plot")}
+  if(method == "probit" && log == FALSE){title.add <- ggtitle("Normal plot")}
+  if(method == "logit" && log == FALSE){title.add <- ggtitle("Exponential plot")}
+  
+  
   #最小値を規定
   #https://www.r-bloggers.com/2015/09/creating-a-scale-transformation/
   y.min <- (1/length(x.raw))*0.5 #係数は調整する必要があるか？
   
-  
   #線を追加用のNULLの変数
   add.p <- NULL; add.q <- NULL
-  
   
   #pdfでなければ、線を追加できるようにする
   if(method != "pdf"){
@@ -363,7 +368,7 @@ plot.kde2 <- function(obj, method = "pdf", alpha = 0.3, p = NULL, q = NULL){
     
     
     if(!is.null(p) && p > 0 && p < 1){
-      print(q.pos)
+
       add.p <- geom_line(
         data = data.frame(q = c(x.min, q.pos, q.pos), p = c(p, p, y.min)), 
         aes(x = q, y = p), colour = "blue")
@@ -379,14 +384,7 @@ plot.kde2 <- function(obj, method = "pdf", alpha = 0.3, p = NULL, q = NULL){
     
     
   }
-  
-  
-  
-  
-  
-  
-  
-  
+
   #ワイブル、ガンベル、正規確率、対数正規確率プロットの場合のy軸のデータとラベル名作成
   if(any(method == paper.method)){
     
@@ -469,7 +467,7 @@ plot.kde2 <- function(obj, method = "pdf", alpha = 0.3, p = NULL, q = NULL){
     add.p + add.q +
     gg.add + 
     
-    xlab(NULL) + ylab(y.name) +
+    xlab(NULL) + ylab(y.name) + title.add +
     lim.add
   
   
@@ -513,6 +511,40 @@ plot.kde2 <- function(obj, method = "pdf", alpha = 0.3, p = NULL, q = NULL){
   return(ret)
 }
 
+#qの値から累積確率
+pkde2 <- function(q, obj){
+  
+  #エラーチェック
+  if(class(obj)[1] != "kde2"){return(NULL)}
+  if(is.null(q)){return(NULL)}
+  if(!is.numeric(q)){return(NULL)}
+  
+  #対数指定かどうか
+  log <- obj$log
+  
+  #戻り値
+  if(log){ret <- pkde(log(q), obj)}else{ret <- pkde(q, obj)}
+  
+  return(ret)
+  
+}
+
+#pの値からxの値
+qkde2 <- function(p, obj){
+  #エラーチェック
+  if(class(obj)[1] != "kde2"){return(NULL)}
+  if(is.null(p)){return(NULL)}
+  if(!is.numeric(p)){return(NULL)}
+  
+  #対数指定かどうか
+  log <- obj$log
+  
+  #戻り値
+  if(log){ret <- exp(qkde(p, obj))}else{ret <- qkde(p, obj)}
+  
+  return(ret)
+  
+}
 
 
 

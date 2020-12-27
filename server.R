@@ -76,6 +76,14 @@ shinyServer(function(input, output) {
              q = is.na.null(input$q.input)))
         })
       
+      #確率表示
+      output$q.out <- renderText({try.null(
+        qkde2(input$p.input, result()) %>% signif(digits = 4)
+        )})
+      output$p.out <- renderText({try.null(
+        pkde2(input$q.input, result()) %>% signif(digits = 4)
+        )})
+      
 
     })
     

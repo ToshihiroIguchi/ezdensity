@@ -64,15 +64,19 @@ shinyUI(fluidPage(
                              column(6,
                                     numericInput("p.input",
                                                  label = "Probability",
-                                                 value = 0.5,
+                                                 value = NA,
                                                  min = 1e-30,
-                                                 max = 1 - 1e-30)
+                                                 max = 1 - 1e-30),
+                                    textOutput("q.out")
                                     
                                     ),
                              column(6,
                                     numericInput("q.input",
                                                  label = "Quantile",
-                                                 value = 1))
+                                                 value = NA),
+                                    textOutput("p.out")
+                                    
+                                    )
                            )
                            
                            )
