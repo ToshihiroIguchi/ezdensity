@@ -1,6 +1,9 @@
 #ライブラリ読み込み
 library(shiny)
 
+library(plotly)
+
+
 #確率紙の縦軸の変換
 probit.logit <- c("probit", "logit", "loglogit")
 names(probit.logit) <- c("Probit", "Logit", "Log-logit")
@@ -37,9 +40,10 @@ shinyUI(fluidPage(
     mainPanel(
       
       tabsetPanel(type = "tabs", 
-                  tabPanel("Histgram", plotOutput("hist")),
-                  tabPanel("pdf", plotOutput("pdf")),
-                  tabPanel("cdf", plotOutput("cdf")),
+                  tabPanel("Histgram", 
+                           plotly::plotlyOutput("hist")),
+                  tabPanel("pdf", plotlyOutput("pdf")),
+                  tabPanel("cdf", plotlyOutput("cdf")),
                   tabPanel("Paper", 
                            
                            fluidRow(

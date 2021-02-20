@@ -5,8 +5,7 @@ library(readr)
 library(readxl)
 library(scales)
 library(ggplot2)
-
-#library(plotly)
+library(plotly)
 
 #ベクトルに強制変換
 as.vec <- function(x){
@@ -543,6 +542,18 @@ qkde2 <- function(p, obj){
   if(log){ret <- exp(qkde(p, obj))}else{ret <- qkde(p, obj)}
   
   return(ret)
+  
+}
+
+#渡されたクラスがggplotだったらplotlyで表示
+gg_plotly <- function(obj){
+  
+  #エラーチェック
+  if(is.null(obj)){return(NULL)}
+  if(!is.na(match("ggplot", obj))){return(NULL)}
+  
+  #plotlyで返す
+  return(ggplotly(obj))
   
 }
 

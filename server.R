@@ -53,8 +53,8 @@ shinyServer(function(input, output) {
       })
       
       #ヒストグラムを表示
-      output$hist <- renderPlot({
-        gg.hist(vec.data(), scale = input$scale)
+      output$hist <- renderPlotly({
+        gg.hist(vec.data(), scale = input$scale) %>% gg_plotly()
       })
       
       #カーネル密度推定（メイン）
@@ -63,13 +63,13 @@ shinyServer(function(input, output) {
       })
       
       #密度推定結果表示
-      output$pdf <- renderPlot({plot(result(), method = "pdf")})
+      output$pdf <- renderPlotly({plot(result(), method = "pdf") %>% gg_plotly()})
       
       #CDF表示
-      output$cdf <- renderPlot({plot(result(), method = "cdf")})
+      output$cdf <- renderPlotly({plot(result(), method = "cdf") %>% gg_plotly()})
       
       #確率紙表示
-      output$paper <- renderPlot({
+      output$paper <- renderPlot({ #plotlyだと縦軸がうまく表示できない
         try.null(plot(result(), method = input$probit.logit, 
              alpha = as.numeric(input$plottingposition),
              p = is.na.null(input$p.input),
