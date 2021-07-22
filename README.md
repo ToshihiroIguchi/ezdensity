@@ -9,7 +9,7 @@ First, access [CRAN](https://cran.r-project.org/), download R and install.
 You can install from R console.
 First install related packages.
 
-    install.packages(c("shiny", "dplyr", "ks", "readr", "readxl", "scales", "ggplot2"))
+    install.packages(c("shiny", "dplyr", "ks", "readr", "readxl", "scales", "ggplot2", "plotly"))
     
 If packages are installed, it can be started from R console with the following command.
     
