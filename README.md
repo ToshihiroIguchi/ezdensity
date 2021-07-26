@@ -33,6 +33,21 @@ Enter the following command in R console.
 If you are in the private network, you can also launch the Shiny application by entering the URL following `Listing on` to the browser.
 
 
+### Docker for Shiny Server
+Describe how to run it with Docker.
+Create an image with the following command.
+
+    docker build -t ezdensity .
+    
+Then, run the following command.
+
+    docker run --rm -p 80:3838 ezdensity
+
+You can start it by accessing the following URL with a browser. `localhost` can be an ip address.
+
+    http://localhost/
+
+
 
 ### License 
 
