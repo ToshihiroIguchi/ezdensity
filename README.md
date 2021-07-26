@@ -48,7 +48,6 @@ You can start it by accessing the following URL with a browser. `localhost` can 
     http://localhost/
 
 
-
 ### License 
 
 ```

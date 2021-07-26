@@ -17,3 +17,4 @@ RUN R -e 'install.packages(c(\
 COPY ./* /srv/shiny-server/
 
 CMD ["/usr/bin/shiny-server"]
+
