@@ -13,7 +13,7 @@ First install related packages.
     
 If packages are installed, it can be started from R console with the following command.
     
-    shiny::runGitHub("ezdensity", "ToshihiroIguchi")
+    shiny::runGitHub("ezdensity", "ToshihiroIguchi", ref = "main")
 
 ### Host
 Host the Shiny application from GitHub in a private network.
@@ -28,7 +28,7 @@ Enter the following command in R console.
     ip <- gsub(".*? ([[:digit:]])", "\\1", ipv4.dat)
 
     #Host the Shiny application from GitHub
-    shiny::runGitHub("ezdensity", "ToshihiroIguchi", launch.browser = FALSE, port = port, host = ip)
+    shiny::runGitHub("ezdensity", "ToshihiroIguchi", launch.browser = FALSE, port = port, host = ip, ref = "main")
 
 If you are in the private network, you can also launch the Shiny application by entering the URL following `Listing on` to the browser.
 
